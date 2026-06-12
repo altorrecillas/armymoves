@@ -1,0 +1,94 @@
+/* ARMY MOVES — Operación Delta */
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;background:#05060a;overflow:hidden;font-family:'Courier New',monospace;
+  touch-action:none;overscroll-behavior:none}
+
+:root{
+  --sab:env(safe-area-inset-bottom,0px);
+  --sar:env(safe-area-inset-right,0px);
+  --sal:env(safe-area-inset-left,0px);
+  --sat:env(safe-area-inset-top,0px);
+  --s1:clamp(64px,17vmin,96px);   /* botón primario */
+  --s2:clamp(50px,13vmin,74px);   /* secundario */
+  --s3:clamp(44px,11vmin,62px);   /* terciario */
+}
+
+#app{position:relative;width:100vw;height:100vh;height:100dvh;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 38%,#10141d 0%,#05060a 72%)}
+
+#canvasWrap{position:relative;width:min(100vw,177.78vh);aspect-ratio:16/9;background:#000;
+  border:1px solid #1b2330;box-shadow:0 0 70px rgba(90,255,130,.07),0 8px 40px rgba(0,0,0,.85)}
+canvas{display:block;width:100%;height:100%}
+
+/* en móvil/tablet: lienzo a sangre, sin marco */
+@media (pointer:coarse){
+  #canvasWrap{border:none;box-shadow:none;width:min(100vw,177.78dvh)}
+}
+
+/* ---- capa táctil ---- */
+#touchLayer{position:fixed;inset:0;z-index:40;touch-action:none}
+
+/* ---- joystick virtual ---- */
+#stick{position:fixed;inset:0;z-index:45;pointer-events:none}
+#stickBase,#stickKnob{position:absolute;border-radius:50%;transform:translate(-50%,-50%);aspect-ratio:1}
+#stickBase{width:clamp(84px,21vmin,124px);
+  border:2px solid rgba(140,255,160,.32);
+  background:radial-gradient(circle,rgba(40,120,60,.08) 30%,rgba(40,120,60,.24));
+  box-shadow:0 0 22px rgba(0,255,80,.12),inset 0 0 18px rgba(0,0,0,.35)}
+#stickBase::after{content:'';position:absolute;inset:18%;border-radius:50%;
+  border:1px dashed rgba(140,255,160,.18)}
+#stickKnob{width:clamp(42px,10.5vmin,62px);
+  background:radial-gradient(circle at 35% 30%,rgba(195,255,205,.9),rgba(55,170,85,.78));
+  box-shadow:0 3px 12px rgba(0,0,0,.55),0 0 16px rgba(0,255,80,.35);
+  transition:width .08s}
+
+/* ---- botones de acción ---- */
+#touchUI{position:fixed;inset:0;z-index:46;pointer-events:none}
+.tbtn{position:fixed;pointer-events:none;aspect-ratio:1;border-radius:50%;
+  font-family:inherit;font-weight:bold;color:#eaffea;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  transition:transform .06s ease,filter .06s ease;
+  text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.tbtn.on{transform:scale(.88);filter:brightness(1.55)}
+
+.slot1{width:var(--s1);font-size:calc(var(--s1)*.38);
+  right:calc(var(--sar) + 18px);bottom:calc(var(--sab) + 18px)}
+.slot2{width:var(--s2);font-size:calc(var(--s2)*.42);
+  right:calc(var(--sar) + 18px + var(--s1) + 14px);bottom:calc(var(--sab) + 30px)}
+.slot3{width:var(--s3);font-size:calc(var(--s3)*.4);
+  right:calc(var(--sar) + 32px);bottom:calc(var(--sab) + 18px + var(--s1) + 16px)}
+
+.tbtn.fire{border-color:rgba(255,115,115,.6);color:#ffc2c2;
+  background:radial-gradient(circle at 35% 30%,rgba(255,120,120,.34),rgba(140,30,30,.32));
+  box-shadow:0 0 18px rgba(255,60,60,.25),0 4px 14px rgba(0,0,0,.5)}
+.tbtn.jump{border-color:rgba(115,175,255,.6);color:#cfe4ff;
+  background:radial-gradient(circle at 35% 30%,rgba(120,180,255,.32),rgba(35,75,160,.32));
+  box-shadow:0 0 18px rgba(80,150,255,.25),0 4px 14px rgba(0,0,0,.5)}
+.tbtn.special{border-color:rgba(255,195,90,.6);color:#ffe2b0;
+  background:radial-gradient(circle at 35% 30%,rgba(255,200,110,.32),rgba(170,110,20,.3));
+  box-shadow:0 0 18px rgba(255,180,60,.22),0 4px 14px rgba(0,0,0,.5)}
+
+#btnPause,#btnHome{position:fixed;z-index:60;cursor:pointer;
+  top:calc(var(--sat) + 10px);
+  width:clamp(38px,9vmin,52px);aspect-ratio:1;border-radius:12px;
+  font-family:inherit;font-size:clamp(14px,3.4vmin,20px);
+  border:1px solid rgba(130,255,150,.4);background:rgba(0,0,0,.5);color:#aef5b2}
+#btnPause{right:calc(var(--sar) + 12px)}
+#btnHome{right:calc(var(--sar) + 12px + clamp(38px,9vmin,52px) + 8px);
+  border-color:rgba(255,190,120,.45);color:#ffd9a8;
+  font-size:clamp(16px,4vmin,24px)}
+#btnPause:active,#btnHome:active{transform:scale(.92);filter:brightness(1.5)}
+
+/* ---- aviso de orientación ---- */
+#rotateOverlay{display:none;position:fixed;inset:0;z-index:100;background:#05060a;
+  flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  color:#aef5b2;text-align:center;letter-spacing:2px}
+#rotateOverlay p{font-size:18px;font-weight:bold;text-shadow:0 0 12px rgba(0,255,80,.4)}
+#rotateOverlay span{font-size:12px;color:#6a8a72;letter-spacing:1px}
+#rotateOverlay .phone{font-size:56px;animation:rot 1.8s ease-in-out infinite}
+@keyframes rot{0%,18%{transform:rotate(0)}55%,82%{transform:rotate(90deg)}100%{transform:rotate(90deg)}}
+@media (orientation:portrait){body.touch #rotateOverlay{display:flex}}
+
+.hidden{display:none!important}
